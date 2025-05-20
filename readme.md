@@ -10,7 +10,7 @@ Originally presented during a the [Tech, Tea + Exchange Residency](https://www.t
 
 A websocket app with with NodeJS, Express, SocketIO and P5js using the [API from Ollama](https://github.com/ollama/ollama/blob/main/docs/api.md) through [the `ollama-js` NPM module](https://github.com/ollama/ollama-js).
 
-Note: you must have Ollama installed *and running* (the Ollama server must be running) on your machine for this to work. Also, the models must have been downloaded beforehand (using `ollama pull <model-name>` – currently, it's `llama3.2:1b` for completion/chat and `gemma3:4b` for multimodal (taking image inputs).
+Note: you must have Ollama installed *and running* (the Ollama server must be running) on your machine for this to work. Also, the models must have been downloaded beforehand (using `ollama pull <model-name>` – currently, it's `llama3.2:1b` for completion/chat and `gemma3:4b` for multimodal (taking image inputs)).
 
 Press `¬` to toggle the UI.
 
