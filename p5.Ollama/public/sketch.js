@@ -1,9 +1,9 @@
 // --------------------------------------------------------------------------------
-// P5js + Node server with websockets and the OpenAI API
+// P5js + Node server with websockets and the Ollama API
 //
-// Jérémie Wenger, 2023
-// With Iris Colomb, in the context of *Machines poétiques*: exploring textual
-// systems through experimental French poetry, Goldsmiths College
+// Jérémie Wenger, 2025
+// With Robin Leverton and Nathan Bayliss, in the context of *Tech, Tea + Exchange*:
+// A residency in partnership with Tate, Anthropic, Goldsmiths and UAL
 // --------------------------------------------------------------------------------
 
 let bgColor; // the background, used in setup, draw & when resetting the sketch
@@ -21,7 +21,7 @@ function setup() {
   // console.log(response);
   createUI();
 
-  bgColor = color(255, 254, 242)
+  bgColor = color(234, 0, 247);
   background(bgColor);
 
 }
@@ -56,8 +56,8 @@ function displayResponse(message, completion=false) {
   if (completion) {
     // in completion mode, both input & message are displayed
     // & we update the text box as wel
-    text(`${message}`, margin, margin, width - 2 * margin);
-    promptTextarea.value = `${message}`;
+    text(`${prompt}${message}`, margin, margin, width - 2 * margin);
+    promptTextarea.value = `${prompt}${message}`;
   } else {
     // in chat mode, display the response only
     text(message, margin, margin, width - 2 * margin);
@@ -118,13 +118,13 @@ function requestImage() {
   const base64Image = imageData.replace(/^data:image\/\w+;base64,/, '');
     socket.emit('image request', {
       'image': base64Image,
-      'system_prompt': data.get('system'),
       'prompt': data.get('prompt'),
+      'system_prompt': data.get('system'),
     }, (response) => console.log(response));
 }
 
 // --------------------------------------------------------------------------------
-// interact with server / make requests to OpenAI
+// interact with server / make requests to Ollama
 
 socket.on('completion response', (message) => {
   console.log('completion response:');

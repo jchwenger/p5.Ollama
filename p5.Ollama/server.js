@@ -2,20 +2,20 @@
 // P5js + Node server with websockets and the Ollama API
 //
 // Jérémie Wenger, 2025
-// With Iris Colomb, in the context of *Machines poétiques*: exploring textual
-// systems through experimental French poetry, Goldsmiths College
+// With Robin Leverton and Nathan Bayliss, in the context of *Tech, Tea + Exchange*:
+// A residency in partnership with Tate, Anthropic, Goldsmiths and UAL
 // --------------------------------------------------------------------------------
 
 import ollama from 'ollama';
 
 ollama.list()
   .then((list) => {
-    console.log('-----------------------');
+    console.log('--------------------------------------------------------------------------------');
     console.log('available local models:');
     for (const m of list.models) {
       console.log(` - ${m.name}`);
     }
-    console.log('-----------------------');
+    console.log('--------------------------------------------------------------------------------');
   });
 
 // // debugging test: stream
@@ -84,9 +84,10 @@ io.on('connection', (socket) => {
       .then((response) => {
         console.log(response); // see the full horror of the response object
         console.log(response.response);
-        const t = response.response; // TODO: OpenAI gives the option to get multiple responses for one request, to be explored!
-        console.log('it answered!');
+        const t = response.response;
         io.emit('completion response', t);
+        console.log('it answered!');
+        console.log('--------------------------------------------------------------------------------');
       })
       .catch((e) => {
         io.emit('completion response', "");
@@ -102,10 +103,11 @@ io.on('connection', (socket) => {
     requestMessage(...Object.values(message))
       .then((response) => {
         // console.log(response); // see the full horror of the response object
-        const t = response.message.content;  // TODO: OpenAI gives the option to get multiple responses for one request, to be explored!
-        console.log('it answered!');
+        const t = response.message.content;
         console.log(t);
         io.emit('chat response', t);
+        console.log('it answered!');
+        console.log('--------------------------------------------------------------------------------');
       })
       .catch((e) => {
         io.emit('chat response', "");
@@ -115,16 +117,17 @@ io.on('connection', (socket) => {
 
   socket.on('image request', (message, sock) => {
     console.log(`image requested by user:`);
-    console.log(message);
+    // console.log(message); // this will print the entire base64 string
     sock('the server received your image request');
     console.log('making request to the model...');
-    requestImage(...Object.values(message))
+    requestImageAnalysis(...Object.values(message))
       .then((response) => {
-        // console.log(response); // see the full horror of the response object
-        const t = response.data[0];  // TODO: OpenAI gives the option to get multiple images for one request, to be explored!
-        console.log('it answered!');
-        console.log(response.data);
+        console.log(response); // see the full horror of the response object
+        const t = response.message.content;
+        console.log(response.message.content);
         io.emit('image response', t);
+        console.log('it answered!');
+        console.log('--------------------------------------------------------------------------------');
       })
       .catch((e) => {
         io.emit('image response', "");
@@ -150,6 +153,8 @@ async function requestCompletion(
     model: 'llama3.2:1b', // TODO: search the documentation for various models, possibly allow the user to change this from the UI.
     prompt: prompt,       //       For available models, see here: https://ollama.com/library
     system: system_prompt,
+    template: '',         // overriding model template: no special tokens etc.
+    raw: true,            // will be added in the background
     stream: false,        // TODO: implement streaming
     options: {
       temperature: parseFloat(temperature),  // security checks
@@ -172,36 +177,32 @@ async function requestMessage(
       {role: "user", content: prompt}
     ],
     options: {
-      temperature: parseFloat(temperature), // for the variable type
-      num_predict: parseInt(max_tokens),    // security checks
+      temperature: parseFloat(temperature), // security checks
+      num_predict: parseInt(max_tokens),    // for the variable type
     }
   });
 }
 
 async function requestImageAnalysis(base64Image, prompt, system_prompt) {
 
-  return await anthropic.messages.create({
-    model: 'gemma3:4b', // Replace with your preferred model
-    system: system_prompt,
+  console.log(`inside requestImageAnalysis:`);
+  // console.log(base64Image);
+  console.log(`prompt: ${prompt}`);
+  console.log(`system: ${system_prompt}`);
+
+  return await ollama.chat({
+    model: 'gemma3:4b', // Replace with your preferred model (note: this multimodal model requires 
     max_tokens: 1000,
     messages: [
+      { role: 'system', content: system_prompt, },
       {
-        role: 'user',
-        content: [
-          {
-            type: 'image',
-            source: {
-              type: 'base64',
-              media_type: 'image/png', // Adjust if your image is a different format
-              data: base64Image,
-            },
-          },
-          {
-            type: 'text',
-            text: prompt,
-          },
-        ],
+        // Note: one could send more than one image!
+        role: 'user', content: prompt, images: [base64Image],
       },
     ],
+    options: {
+      // temperature: parseFloat(temperature), // security checks
+      // num_predict: parseInt(max_tokens),    // for the variable type
+    }
   });
 }
