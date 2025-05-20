@@ -41,6 +41,8 @@ function keyPressed() {
 
 function displayResponse(message, completion=false) {
 
+  // console.log('inside display response, completion?', completion);
+
   background(bgColor);
 
   fill(0);
@@ -51,14 +53,15 @@ function displayResponse(message, completion=false) {
   // fill both sketch and input with prompt + answer
   const promptTextarea = document.getElementsByName('prompt')[0];
   const prompt = promptTextarea.value;
-  // in completion mode, both input & message are displayed
   if (completion) {
-    text(`${prompt}${message}`, margin, margin, width - 2 * margin);
-  // in chat mode, display the response only
+    // in completion mode, both input & message are displayed
+    // & we update the text box as wel
+    text(`${message}`, margin, margin, width - 2 * margin);
+    promptTextarea.value = `${message}`;
   } else {
+    // in chat mode, display the response only
     text(message, margin, margin, width - 2 * margin);
   }
-  promptTextarea.value = `${prompt}${message}`;
 }
 
 function displayImage(message) {
@@ -80,8 +83,11 @@ function requestCompletion() {
   const form = document.getElementById('request-form');
   const data = new FormData(form);
   console.log('requesting completion');
+  console.log(form);
+  console.log(data.get('max-tokens'));
   socket.emit('completion request', {
       'prompt': data.get('prompt'),
+      'system_prompt': data.get('system'),
       'max_tokens': data.get('max-tokens'),
       'temperature': data.get('temperature'),
     }, (response) => console.log(response));
@@ -105,7 +111,14 @@ function requestImage() {
   const data = new FormData(form);
   console.log('requesting image');
   console.log(form);
+  // Get the canvas and convert it to a base64-encoded PNG image
+  const canvas = document.querySelector('canvas'); // assuming p5.js created one canvas
+  const imageData = canvas.toDataURL('image/png'); // you could also use 'image/jpeg'
+  // Strip the prefix to get raw base64 content
+  const base64Image = imageData.replace(/^data:image\/\w+;base64,/, '');
     socket.emit('image request', {
+      'image': base64Image,
+      'system_prompt': data.get('system'),
       'prompt': data.get('prompt'),
     }, (response) => console.log(response));
 }
@@ -128,7 +141,7 @@ socket.on('chat response', (message) => {
 socket.on('image response', (message) => {
   console.log('image response:');
   console.log(message);
-  displayImage(message);
+  displayResponse(message);
 });
 
 // --------------------------------------------------------------------------------
@@ -202,7 +215,7 @@ function createUI() {
   maxTokens.setAttribute('max', '256');
   maxTokens.setAttribute('step', '1');
   maxTokens.setAttribute('name', 'max-tokens');
-  maxTokens.setAttribute('value', '7');
+  maxTokens.setAttribute('value', '-1');
   maxTokens.setAttribute('placeholder', '7');
 
   const maxTokensLabel = document.createElement('label');

@@ -1,70 +1,51 @@
 // --------------------------------------------------------------------------------
-// P5js + Node server with websockets and the OpenAI API
+// P5js + Node server with websockets and the Ollama API
 //
-// Jérémie Wenger, 2023
+// Jérémie Wenger, 2025
 // With Iris Colomb, in the context of *Machines poétiques*: exploring textual
 // systems through experimental French poetry, Goldsmiths College
 // --------------------------------------------------------------------------------
 
-import fs from 'fs';
-import OpenAI from 'openai';
-import { dirname } from 'path';
-import { fileURLToPath } from 'url';
+import ollama from 'ollama';
 
-// Authentication, two ways: environment or a file
-// -----------------------------------------------
-// 1) Synchronous file read, cf.
-// https://nodejs.dev/en/learn/reading-files-with-nodejs/ (and GPT :>) let
-// secretOpenAIKey;
+ollama.list()
+  .then((list) => {
+    console.log('-----------------------');
+    console.log('available local models:');
+    for (const m of list.models) {
+      console.log(` - ${m.name}`);
+    }
+    console.log('-----------------------');
+  });
 
-let secretOpenAIKey;
-
-try {
-  const __filename = fileURLToPath(import.meta.url);
-  const __dirname = dirname(__filename);
-  const data = fs.readFileSync(__dirname + '/secret.txt');
-  secretOpenAIKey =  data.toString().trim();
-} catch (err) {
-  console.error(err);
-}
-
-// 2) local environment
-//    for this, you need to define the variable in your terminal before launching node:
-//    export OPENAI_API_KEY=...
-if (!secretOpenAIKey) {
-
-  console.log('configuration through the `secret.txt` file, trying the environment variable');
-
-  secretOpenAIKey = process.env.OPENAI_API_KEY;
-
-  if (!secretOpenAIKey) {
-    console.log('---------------------------------------------------------------------------------');
-    console.log('could not access the secret API key, please read `readme.md` on how to configure!');
-    console.log('---------------------------------------------------------------------------------');
-    process.exit(2);
-  } else {
-    console.log('configuration through the environment variable successful!');
-  }
-
-} else {
-  console.log('configuration through the secret text file successful!');
-}
-
-const openai = new OpenAI({
-  apiKey: secretOpenAIKey,
-});
-
-// // to see all available models in the terminal
-// // (the official list can be found here: https://platform.openai.com/docs/models/overview)
-// async function listEngines() {
-//   return await openai.models.list();
+// // debugging test: stream
+// const response = await ollama.generate({
+//     model: 'llama3.2:1b',
+//     prompt: 'Hello',
+//     system: 'You are a helpful assistant.',
+//     stream: true,
+//     options: {
+//       temperature: 1.0,
+//       num_predict: -1,
+//     }
+//   });
+// for await (const part of response) {
+//   process.stdout.write(part.response);
 // }
-// console.log('requesting engines');
-// const response = listEngines().then(r => {
-//   console.log(r);
-//   console.log('done');
-//   process.exit(2);
-// });
+// process.stdout.write('\n');
+
+// // debugging test: no stream
+// const response = await ollama.generate({
+//     model: 'llama3.2:1b',
+//     prompt: 'Hello',
+//     system: 'You are a helpful assistant.',
+//     stream: false,
+//     options: {
+//       temperature: 1.0,
+//       num_predict: -1,
+//     }
+//   });
+// console.log(response.response);
 
 // https://socket.io/get-started/chat#integrating-socketio
 // See also Dan Shiffman's tutorial on Node & Websockets for more information
@@ -98,11 +79,12 @@ io.on('connection', (socket) => {
     console.log(message);
     sock('the server received your completion request');
     console.log('making request to the model...');
+    console.log(...Object.values(message));
     requestCompletion(...Object.values(message))
       .then((response) => {
-        // console.log(response); // see the full horror of the response object
-        console.log(response.choices);
-        const t = response.choices[0].text // TODO: OpenAI gives the option to get multiple responses for one request, to be explored!
+        console.log(response); // see the full horror of the response object
+        console.log(response.response);
+        const t = response.response; // TODO: OpenAI gives the option to get multiple responses for one request, to be explored!
         console.log('it answered!');
         io.emit('completion response', t);
       })
@@ -120,9 +102,9 @@ io.on('connection', (socket) => {
     requestMessage(...Object.values(message))
       .then((response) => {
         // console.log(response); // see the full horror of the response object
-        const t = response.choices[0].message.content;  // TODO: OpenAI gives the option to get multiple responses for one request, to be explored!
+        const t = response.message.content;  // TODO: OpenAI gives the option to get multiple responses for one request, to be explored!
         console.log('it answered!');
-        console.log(response.choices);
+        console.log(t);
         io.emit('chat response', t);
       })
       .catch((e) => {
@@ -156,45 +138,70 @@ io.on('connection', (socket) => {
 // this allows us to make a call to the API, and wait for it to respond
 // without breaking our code
 async function requestCompletion(
-  prompt = 'Say this is a test',
-  max_tokens = 7,
+  prompt = 'Say: "this is a test".',
+  system_prompt = 'You are a helpful assistant.',
+  max_tokens = -1, // no limit
   temperature = 0.7,
 ) {
   // console.log('inside requestCompletion', prompt, max_tokens, temperature);
-  return await openai.completions.create({
-    model: 'gpt-3.5-turbo-instruct', // TODO: search the documentation for various models, possibly allow the user to change this from the UI.
-    prompt: prompt,                  //       For available models, see here: https://stackoverflow.com/a/75777838
-    temperature: parseFloat(temperature),  // security checks
-    max_tokens: parseInt(max_tokens),      // for the variable type
-    n: 1, // TODO: the parameter for requesting more than one answer
+  // https://github.com/ollama/ollama-js?tab=readme-ov-file#generate
+  console.log(`requestion completion with ${max_tokens} tokens, temperature: ${temperature}`);
+  return await ollama.generate({
+    model: 'llama3.2:1b', // TODO: search the documentation for various models, possibly allow the user to change this from the UI.
+    prompt: prompt,       //       For available models, see here: https://ollama.com/library
+    system: system_prompt,
+    stream: false,        // TODO: implement streaming
+    options: {
+      temperature: parseFloat(temperature),  // security checks
+      num_predict: parseInt(max_tokens),     // for the variable type
+    }
   });
 }
 
 async function requestMessage(
   prompt = 'Say this is a test',
   system_prompt = 'You are William Shakespeare and speak like in the 1590s.',
-  max_tokens = 7,
+  max_tokens = -1, // no limit
   temperature = 0.7,
 ) {
   // console.log('inside requestChat', prompt, system_prompt, max_tokens, temperature);
-  return await openai.chat.completions.create({
-    model: "gpt-3.5-turbo",
+  return await ollama.chat({
+    model: 'llama3.2:1b',
     messages: [
       {role: "system", content: system_prompt},
       {role: "user", content: prompt}
     ],
-    max_tokens: parseInt(max_tokens),     // security checks
-    temperature: parseFloat(temperature), // for the variable type
-    n: 1, // TODO: the parameter for requesting more than one answer
+    options: {
+      temperature: parseFloat(temperature), // for the variable type
+      num_predict: parseInt(max_tokens),    // security checks
+    }
   });
 }
 
-async function requestImage(
-  prompt = "The rainbow cyborg armageddon, Dutch oil painting, 1723, British Museum"
-) {
-  return await openai.images.generate({
-    prompt: prompt,
-    n: 1,              // TODO: the number of images should be betwen 1 & 10 → add the appropriate field to the UI
-    size: "256x256",  // TODO: add a way for users to change image sizes, possible choices: 256x256, 512x512, or 1024x1024
+async function requestImageAnalysis(base64Image, prompt, system_prompt) {
+
+  return await anthropic.messages.create({
+    model: 'gemma3:4b', // Replace with your preferred model
+    system: system_prompt,
+    max_tokens: 1000,
+    messages: [
+      {
+        role: 'user',
+        content: [
+          {
+            type: 'image',
+            source: {
+              type: 'base64',
+              media_type: 'image/png', // Adjust if your image is a different format
+              data: base64Image,
+            },
+          },
+          {
+            type: 'text',
+            text: prompt,
+          },
+        ],
+      },
+    ],
   });
 }
