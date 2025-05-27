@@ -6,8 +6,10 @@
 // A residency in partnership with Tate, Anthropic, Goldsmiths and UAL
 // --------------------------------------------------------------------------------
 
-// model globals, see list here
-// https://ollama.com/search
+// Ollama documentation: https://github.com/ollama/ollama/blob/main/docs/api.md
+// Ollama-js documentation: https://github.com/ollama/ollama-js
+
+// model globals, see list here: https://ollama.com/search
 // NOTE: You *must* have downloaded them beforehand!
 //       ollama pull <model-name> 
 //       or
@@ -102,6 +104,7 @@ io.on('connection', (socket) => {
       .catch((e) => {
         io.emit('completion response', `[server says: oops, error: ${e.error}]`);
         console.error(e);
+        console.log('----------------------------------------');
       });
   });
 
@@ -110,7 +113,7 @@ io.on('connection', (socket) => {
     console.log(message);
     sock('the server received your chat request');
     console.log('making request to the model...');
-    requestMessage(...Object.values(message))
+    requestChat(...Object.values(message))
       .then((response) => {
         // console.log(response); // see the full horror of the response object
         const t = response.message.content;
@@ -122,6 +125,7 @@ io.on('connection', (socket) => {
       .catch((e) => {
         io.emit('chat response',  `[server says: oops, error: ${e.error}]`);
         console.error(e);
+        console.log('----------------------------------------');
       });
   });
 
@@ -130,7 +134,7 @@ io.on('connection', (socket) => {
     // console.log(message); // this will print the entire base64 string
     sock('the server received your image request');
     console.log('making request to the model...');
-    requestImageAnalysis(...Object.values(message))
+    requestChatImage(...Object.values(message))
       .then((response) => {
         // console.log(response); // see the full horror of the response object
         const t = response.message.content;
@@ -142,6 +146,7 @@ io.on('connection', (socket) => {
       .catch((e) => {
         io.emit('image response',  `[server says: oops, error: ${e.error}]`);
         console.error(e);
+        console.log('----------------------------------------');
       });
   });
 
@@ -156,16 +161,24 @@ async function requestCompletion(
   max_tokens = -1, // no limit
   temperature = 0.7,
 ) {
-  // console.log('inside requestCompletion', prompt, max_tokens, temperature);
+
+  // generation documentation:
   // https://github.com/ollama/ollama-js?tab=readme-ov-file#generate
+
+  // console.log('inside requestCompletion');
+  // console.log(`prompt: ${prompt}`);
+  // console.log(`system: ${system_prompt}`);
+  // console.log(`max_tokens: ${max_tokens}`);
+  // console.log(`temperature: ${temperature}`);
+
   console.log(`requestion completion with ${max_tokens} tokens, temperature: ${temperature}`);
   return await ollama.generate({
-    model: GEN_MODEL, // TODO: search the documentation for various models, possibly allow the user to change this from the UI.
-    prompt: prompt,       //       For available models, see here: https://ollama.com/library
+    model: GEN_MODEL, // TODO: search the documentation for various models, possibly allow
+    prompt: prompt,   //       the user to change this from the UI.
     system: system_prompt,
     template: '',         // overriding model template: no special tokens etc.
     raw: true,            // will be added in the background
-    stream: false,        // TODO: implement streaming
+    stream: false,        // TODO: implement streaming (typewriter effect)
     options: {
       temperature: parseFloat(temperature),  // security checks
       num_predict: parseInt(max_tokens),     // for the variable type
@@ -173,13 +186,22 @@ async function requestCompletion(
   });
 }
 
-async function requestMessage(
+async function requestChat(
   prompt = 'Say this is a test',
   system_prompt = 'You are William Shakespeare and speak like in the 1590s.',
   max_tokens = -1, // no limit
   temperature = 0.7,
 ) {
-  // console.log('inside requestChat', prompt, system_prompt, max_tokens, temperature);
+
+  // chat documentation:
+  // https://github.com/ollama/ollama-js?tab=readme-ov-file#chat
+
+  // console.log('inside requestChat');
+  // console.log(`prompt: ${prompt}`);
+  // console.log(`system: ${system_prompt}`);
+  // console.log(`max_tokens: ${max_tokens}`);
+  // console.log(`temperature: ${temperature}`);
+
   return await ollama.chat({
     model: CHAT_MODEL,
     messages: [
@@ -193,15 +215,22 @@ async function requestMessage(
   });
 }
 
-async function requestImageAnalysis(base64Image, prompt, system_prompt) {
+async function requestChatImage(
+  base64Image,
+  prompt = 'Describe the image provided.',
+  system_prompt = 'You are a helpful assistant.'
+) {
 
-  console.log(`inside requestImageAnalysis:`);
-  // console.log(base64Image);
-  console.log(`prompt: ${prompt}`);
-  console.log(`system: ${system_prompt}`);
+  // chat documentation (images are fed as a chat message):
+  // https://github.com/ollama/ollama-js?tab=readme-ov-file#chat
+
+  // console.log(`inside requestChatImage:`);
+  // // console.log(base64Image);
+  // console.log(`prompt: ${prompt}`);
+  // console.log(`system: ${system_prompt}`);
 
   return await ollama.chat({
-    model: MULTI_MODEL, // Replace with your preferred model (note: this multimodal model requires 
+    model: MULTI_MODEL,
     max_tokens: 1000,
     messages: [
       { role: 'system', content: system_prompt, },
@@ -210,9 +239,9 @@ async function requestImageAnalysis(base64Image, prompt, system_prompt) {
         role: 'user', content: prompt, images: [base64Image],
       },
     ],
+    // TODO: check the effect of temperature on this
     options: {
       // temperature: parseFloat(temperature), // security checks
-      // num_predict: parseInt(max_tokens),    // for the variable type
     }
   });
 }
