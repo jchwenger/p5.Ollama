@@ -6,21 +6,31 @@
 // A residency in partnership with Tate, Anthropic, Goldsmiths and UAL
 // --------------------------------------------------------------------------------
 
+// model globals, see list here
+// https://ollama.com/search
+// NOTE: You *must* have downloaded them beforehand!
+//       ollama pull <model-name> 
+//       or
+//       ollama run <model-name> // then stop the chat
+const GEN_MODEL =  'llama3.2:1b';
+const CHAT_MODEL = 'llama3.2:1b';
+const MULTI_MODEL =  'gemma3:4b';
+
 import ollama from 'ollama';
 
 ollama.list()
   .then((list) => {
-    console.log('--------------------------------------------------------------------------------');
+    console.log('----------------------------------------');
     console.log('available local models:');
     for (const m of list.models) {
       console.log(` - ${m.name}`);
     }
-    console.log('--------------------------------------------------------------------------------');
+    console.log('----------------------------------------');
   });
 
 // // debugging test: stream
 // const response = await ollama.generate({
-//     model: 'llama3.2:1b',
+//     model: GEN_MODEL,
 //     prompt: 'Hello',
 //     system: 'You are a helpful assistant.',
 //     stream: true,
@@ -36,7 +46,7 @@ ollama.list()
 
 // // debugging test: no stream
 // const response = await ollama.generate({
-//     model: 'llama3.2:1b',
+//     model: GEN_MODEL,
 //     prompt: 'Hello',
 //     system: 'You are a helpful assistant.',
 //     stream: false,
@@ -82,15 +92,15 @@ io.on('connection', (socket) => {
     console.log(...Object.values(message));
     requestCompletion(...Object.values(message))
       .then((response) => {
-        console.log(response); // see the full horror of the response object
-        console.log(response.response);
+        // console.log(response); // see the full horror of the response object
         const t = response.response;
+        console.log(t);
         io.emit('completion response', t);
         console.log('it answered!');
-        console.log('--------------------------------------------------------------------------------');
+        console.log('----------------------------------------');
       })
       .catch((e) => {
-        io.emit('completion response', "");
+        io.emit('completion response', `[server says: oops, error: ${e.error}]`);
         console.error(e);
       });
   });
@@ -107,10 +117,10 @@ io.on('connection', (socket) => {
         console.log(t);
         io.emit('chat response', t);
         console.log('it answered!');
-        console.log('--------------------------------------------------------------------------------');
+        console.log('----------------------------------------');
       })
       .catch((e) => {
-        io.emit('chat response', "");
+        io.emit('chat response',  `[server says: oops, error: ${e.error}]`);
         console.error(e);
       });
   });
@@ -122,15 +132,15 @@ io.on('connection', (socket) => {
     console.log('making request to the model...');
     requestImageAnalysis(...Object.values(message))
       .then((response) => {
-        console.log(response); // see the full horror of the response object
+        // console.log(response); // see the full horror of the response object
         const t = response.message.content;
-        console.log(response.message.content);
+        console.log(t);
         io.emit('image response', t);
         console.log('it answered!');
-        console.log('--------------------------------------------------------------------------------');
+        console.log('----------------------------------------');
       })
       .catch((e) => {
-        io.emit('image response', "");
+        io.emit('image response',  `[server says: oops, error: ${e.error}]`);
         console.error(e);
       });
   });
@@ -150,7 +160,7 @@ async function requestCompletion(
   // https://github.com/ollama/ollama-js?tab=readme-ov-file#generate
   console.log(`requestion completion with ${max_tokens} tokens, temperature: ${temperature}`);
   return await ollama.generate({
-    model: 'llama3.2:1b', // TODO: search the documentation for various models, possibly allow the user to change this from the UI.
+    model: GEN_MODEL, // TODO: search the documentation for various models, possibly allow the user to change this from the UI.
     prompt: prompt,       //       For available models, see here: https://ollama.com/library
     system: system_prompt,
     template: '',         // overriding model template: no special tokens etc.
@@ -171,7 +181,7 @@ async function requestMessage(
 ) {
   // console.log('inside requestChat', prompt, system_prompt, max_tokens, temperature);
   return await ollama.chat({
-    model: 'llama3.2:1b',
+    model: CHAT_MODEL,
     messages: [
       {role: "system", content: system_prompt},
       {role: "user", content: prompt}
@@ -191,7 +201,7 @@ async function requestImageAnalysis(base64Image, prompt, system_prompt) {
   console.log(`system: ${system_prompt}`);
 
   return await ollama.chat({
-    model: 'gemma3:4b', // Replace with your preferred model (note: this multimodal model requires 
+    model: MULTI_MODEL, // Replace with your preferred model (note: this multimodal model requires 
     max_tokens: 1000,
     messages: [
       { role: 'system', content: system_prompt, },
