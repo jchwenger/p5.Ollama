@@ -85,9 +85,6 @@ io.on('connection', (socket) => {
   console.log(`connection! id: ${socket.id}`);
   // console.log(socket);
 
-  io.emit('message', 'hello');
-  // console.log('sent message');
-
   // ! See requestCompletion for notes on available models
   socket.on('completion request', (message, sock) => {
     console.log(`completion requested by user:`);
