@@ -2,7 +2,7 @@
 
 ## [p5.js](https://p5js.org/) & [Ollama](https://ollama.com/)
 
-Originally presented during a the [Tech, Tea + Exchange Residency](https://www.tate.org.uk/whats-on/tate-modern/electric-dreams/tech-tea--exchange), London, June 2025, in a workshop with Nathan Bayliss, Robin Leverton and Jérémie Wenger. More in [this repo](https://github.com/jchwenger/TECH-TEA-EXCHANGE).
+Originally presented during a the [Tech, Tea + Exchange Residency](https://www.tate.org.uk/whats-on/tate-modern/electric-dreams/tech-tea--exchange), London, May 2025, in a workshop with Nathan Bayliss, Robin Leverton and Jérémie Wenger. More in [this repo](https://github.com/jchwenger/TECH-TEA-EXCHANGE), then during a Computational Arts MA/MFA Workshop at Goldsmiths College, London, June 2025, by [Iris Colomb](https://iriscolomb.com/). 
 
 ## Starter code
 

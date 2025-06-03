@@ -1,9 +1,12 @@
 // --------------------------------------------------------------------------------
 // P5js + Node server with websockets and the Ollama API
-//
+
 // Jérémie Wenger, 2025
 // With Robin Leverton and Nathan Bayliss, in the context of *Tech, Tea + Exchange*:
 // A residency in partnership with Tate, Anthropic, Goldsmiths and UAL
+// As well as
+// With Iris Colomb, in the context of *Machines poétiques*: exploring textual
+// systems through experimental French poetry, Goldsmiths College
 // --------------------------------------------------------------------------------
 
 // Ollama documentation: https://github.com/ollama/ollama/blob/main/docs/api.md
