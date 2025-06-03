@@ -4,6 +4,9 @@
 // Jérémie Wenger, 2025
 // With Robin Leverton and Nathan Bayliss, in the context of *Tech, Tea + Exchange*:
 // A residency in partnership with Tate, Anthropic, Goldsmiths and UAL
+// As well as
+// With Iris Colomb, in the context of *Machines poétiques*: exploring textual
+// systems through experimental French poetry, Goldsmiths College
 // --------------------------------------------------------------------------------
 
 let bgColor; // the background, used in setup, draw & when resetting the sketch
