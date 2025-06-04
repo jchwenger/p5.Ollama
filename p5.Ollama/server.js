@@ -62,9 +62,13 @@ ollama.list()
 //   });
 // console.log(response.response);
 
+// Web Sockets reference:
 // https://socket.io/get-started/chat#integrating-socketio
-// See also Dan Shiffman's tutorial on Node & Websockets for more information
-// https://www.youtube.com/watch?v=bjULmG8fqc8&list=PLRqwX-V7Uu6b36TzJidYfIYwTFEq3K5qH
+// For more information, see also Dan Shiffman's tutorials on:
+// - Node & Websockets:
+//   https://www.youtube.com/playlist?list=PLRqwX-V7Uu6b36TzJidYfIYwTFEq3K5qH
+// - JavaScript promises (and 'then', 'async/await'):
+//   https://www.youtube.com/playlist?list=PLRqwX-V7Uu6bKLPQvPRNNE65kBL62mVfx
 
 import express from 'express';
 import { Server } from 'socket.io';
@@ -77,6 +81,9 @@ const server = app.listen(port, () => {
 
 // make our 'public' folder visible to the outside world
 app.use(express.static('public'));
+
+// --------------------------------------------------------------------------------
+// web socket logic
 
 const io = new Server(server);
 
@@ -151,6 +158,10 @@ io.on('connection', (socket) => {
   });
 
 });
+
+
+// --------------------------------------------------------------------------------
+// LLM functions
 
 // separate async function (required if we want to use the await keyword)
 // this allows us to make a call to the API, and wait for it to respond
